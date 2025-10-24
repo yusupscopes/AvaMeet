@@ -3,6 +3,7 @@
 import z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { OctagonAlertIcon } from "lucide-react";
+import { FaGoogle } from "react-icons/fa";
 
 import { Card, CardContent } from "@/components/ui/card";
 import React, { useState } from "react";
@@ -19,8 +20,8 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 const formSchema = z
   .object({
@@ -31,7 +32,7 @@ const formSchema = z
       .string()
       .min(1, { message: "Confirm Password is required" }),
   })
-  .refine((data) => data.password == data.confirmPassword, {
+  .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
   });
@@ -60,11 +61,33 @@ const SignUpView = () => {
         name: data.name,
         email: data.email,
         password: data.password,
+        callbackURL: "/",
       },
       {
         onSuccess: () => {
           setPending(false);
           router.push("/");
+        },
+        onError: ({ error }) => {
+          setPending(false);
+          setError(error.message);
+        },
+      }
+    );
+  };
+
+  const onSocialSubmit = (provider: "google") => {
+    setError(null);
+    setPending(true);
+
+    authClient.signIn.social(
+      {
+        provider,
+        callbackURL: "/",
+      },
+      {
+        onSuccess: () => {
+          setPending(false);
         },
         onError: ({ error }) => {
           setPending(false);
@@ -84,7 +107,7 @@ const SignUpView = () => {
                 <div className="flex flex-col items-center text-center">
                   <h1 className="text-2xl font-bold">Let&apos;s get started</h1>
                   <p className="text-muted-foreground text-balance">
-                    Creata your account
+                    Create your account
                   </p>
                 </div>
                 <div className="grid gap-3">
@@ -177,22 +200,15 @@ const SignUpView = () => {
                     Or continue with
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <Button
+                    onClick={() => onSocialSubmit("google")}
                     disabled={pending}
                     type="button"
                     variant="outline"
                     className="w-full"
                   >
-                    Google
-                  </Button>
-                  <Button
-                    disabled={pending}
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                  >
-                    Apple
+                    <FaGoogle />
                   </Button>
                 </div>
                 <div className="text-center text-sm">

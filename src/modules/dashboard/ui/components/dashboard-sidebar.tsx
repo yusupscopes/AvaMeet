@@ -1,7 +1,8 @@
 "use client";
+import { BotIcon, LucideIcon, StarIcon, VideoIcon } from "lucide-react";
 
 type MenuType = {
-  icon: any;
+  icon: LucideIcon;
   label: string;
   href: string;
 };
@@ -20,7 +21,6 @@ import {
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
-import { BotIcon, StarIcon, VideoIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";

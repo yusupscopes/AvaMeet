@@ -7,7 +7,7 @@ export const AgentView = () => {
   const trpc = useTRPC();
   const { data } = useSuspenseQuery(trpc.agent.getMany.queryOptions());
 
-  return <div>{JSON.stringify(data, null, 2)}</div>;
+  return <pre>{JSON.stringify(data, null, 2)}</pre>;
 };
 
 import { LoadingState } from "@/components/loading-state";

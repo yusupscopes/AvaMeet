@@ -11,13 +11,16 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 
 export const agentRouter = createTRPCRouter({
-  getMany: protectedProcedure.query(async () => {
+  getMany: protectedProcedure.query(async ({ ctx }) => {
     // await new Promise((resolve) => setTimeout(resolve, 5000));
     // throw new TRPCError({
     //   code: "BAD_REQUEST",
     // });
 
-    return await database.select().from(agent);
+    return await database
+      .select()
+      .from(agent)
+      .where(eq(agent.userId, ctx.auth.user.id));
   }),
 
   getOne: protectedProcedure
@@ -27,6 +30,13 @@ export const agentRouter = createTRPCRouter({
         .select()
         .from(agent)
         .where(eq(agent.id, input.id));
+
+      if (!selectedAgent) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: `Agent with id ${input.id} not found`,
+        });
+      }
 
       return selectedAgent;
     }),

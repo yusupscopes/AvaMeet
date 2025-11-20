@@ -70,24 +70,24 @@ export const agentRouter = createTRPCRouter({
 
   getOne: protectedProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      const [selectedAgent] = await database
+    .query(async ({ input, ctx }) => {
+      const [existingAgent] = await database
         .select({
           // TODO: Change to actual count
           meetingCount: sql<number>`5`,
           ...getTableColumns(agent),
         })
         .from(agent)
-        .where(eq(agent.id, input.id));
+        .where(and(eq(agent.id, input.id), eq(agent.userId, ctx.auth.user.id)));
 
-      if (!selectedAgent) {
+      if (!existingAgent) {
         throw new TRPCError({
           code: "NOT_FOUND",
           message: `Agent with id ${input.id} not found`,
         });
       }
 
-      return selectedAgent;
+      return existingAgent;
     }),
 
   create: protectedProcedure

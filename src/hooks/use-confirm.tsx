@@ -5,13 +5,13 @@ import { JSX, useState } from "react";
 export const useConfirm = (
   title: string,
   description: string
-): [() => JSX.Element, () => Promise<unknown>] => {
+): [() => JSX.Element, () => Promise<boolean>] => {
   const [promise, setPromise] = useState<{
     resolve: (value: boolean) => void;
   } | null>(null);
 
   const confirm = () => {
-    return new Promise((resolve) => {
+    return new Promise<boolean>((resolve) => {
       setPromise({ resolve });
     });
   };
@@ -20,12 +20,23 @@ export const useConfirm = (
     setPromise(null);
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open && promise) {
+      promise.resolve(false);
+      handleClose();
+    }
+  };
+
   const handleConfirm = () => {
+    if (!promise) return;
+
     promise?.resolve(true);
     handleClose();
   };
 
   const handleCancel = () => {
+    if (!promise) return;
+
     promise?.resolve(false);
     handleClose();
   };
@@ -33,7 +44,7 @@ export const useConfirm = (
   const ConfirmationDialog = () => (
     <ResponsiveDialog
       open={promise !== null}
-      onOpenChange={handleClose}
+      onOpenChange={handleOpenChange}
       title={title}
       description={description}
     >

@@ -1,4 +1,4 @@
-import { MeetingIdView } from "@/modules/meeting/server/ui/views/meeting-id-view";
+import { MeetingIdView } from "@/modules/meeting/ui/views/meeting-id-view";
 
 const Page = () => {
   return <MeetingIdView />;

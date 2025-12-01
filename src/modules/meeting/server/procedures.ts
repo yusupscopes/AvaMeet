@@ -1,5 +1,5 @@
 import { database } from "@/database";
-import { meeting } from "@/database/schema";
+import { agent, meeting } from "@/database/schema";
 import {
   baseProcedure,
   createTRPCRouter,
@@ -72,8 +72,13 @@ export const meetingRouter = createTRPCRouter({
       const items = await database
         .select({
           ...getTableColumns(meeting),
+          agent: agent,
+          duration: sql<number>`EXTRACT(EPOCH FROM (ended_at - started_at))`.as(
+            "duration"
+          ),
         })
         .from(meeting)
+        .innerJoin(agent, eq(meeting.agentId, agent.id))
         .where(
           and(
             eq(meeting.userId, ctx.auth.user.id),
@@ -87,6 +92,7 @@ export const meetingRouter = createTRPCRouter({
       const [total] = await database
         .select({ count: count() })
         .from(meeting)
+        .innerJoin(agent, eq(meeting.agentId, agent.id))
         .where(
           and(
             eq(meeting.userId, ctx.auth.user.id),

@@ -177,7 +177,7 @@ export const MeetingForm = ({
             {onCancel && (
               <Button
                 variant="ghost"
-                disabled={isCreatePending}
+                disabled={isCreatePending || isUpdatePending}
                 type="button"
                 onClick={() => onCancel()}
               >

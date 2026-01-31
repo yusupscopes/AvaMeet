@@ -11,8 +11,16 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
+import { SearchParams } from "nuqs";
+import { loadSearchParams } from "@/modules/meeting/params";
 
-const Page = async () => {
+interface Props {
+  searchParams: Promise<SearchParams>;
+}
+
+const Page = async ({ searchParams }: Props) => {
+  const filters = await loadSearchParams(searchParams);
+
   const session = await auth.api.getSession({
     headers: await headers(),
   });
@@ -22,7 +30,7 @@ const Page = async () => {
   }
 
   const queryClient = getQueryClient();
-  await queryClient.prefetchQuery(trpc.meeting.getMany.queryOptions({}));
+  await queryClient.prefetchQuery(trpc.meeting.getMany.queryOptions({ ...filters }));
 
   return (
     <>

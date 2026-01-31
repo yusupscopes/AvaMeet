@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CommandSelect } from "@/components/command-select";
 import { GeneratedAvatar } from "@/components/generated-avatar";
-import { MAX_PAGE_SIZE } from "@/constants";
+import { MAX_PAGE_SIZE, DEFAULT_PAGE } from "@/constants";
 
 export const MeetingAgentIdFilter = () => {
   const [filters, setFilters] = useMeetingsFilters();
@@ -35,7 +35,7 @@ export const MeetingAgentIdFilter = () => {
           </div>
         ),
       }))}
-      onSelect={(value) => setFilters({ agentId: value })}
+      onSelect={(value) => setFilters({ agentId: value, page: DEFAULT_PAGE })}
       onSearch={setAgentSearch}
       value={filters.agentId ?? ""}
     ></CommandSelect>

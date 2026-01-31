@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { MeetingStatus } from "../../types";
 import { useMeetingsFilters } from "../../hooks/use-meetings-filters";
+import { DEFAULT_PAGE } from "@/constants";
 
 const options = [
   {
@@ -70,7 +71,7 @@ export const MeetingStatusFilter = () => {
       className="h-9"
       options={options}
       value={filters.status ?? ""}
-      onSelect={(value) => setFilters({ status: value as MeetingStatus })}
+      onSelect={(value) => setFilters({ status: value as MeetingStatus, page: DEFAULT_PAGE })}
     />
   );
 };

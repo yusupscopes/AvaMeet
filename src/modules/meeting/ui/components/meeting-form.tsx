@@ -51,9 +51,18 @@ export const MeetingForm = ({
   const createMeeting = useMutation(
     trpc.meeting.create.mutationOptions({
       onSuccess: async (data) => {
-        await queryClient.invalidateQueries(
-          trpc.meeting.getMany.queryOptions({})
-        );
+        await queryClient.invalidateQueries({
+          predicate: (query) => {
+            const queryKey = query.queryKey;
+            return (
+              Array.isArray(queryKey) &&
+              queryKey.length >= 2 &&
+              Array.isArray(queryKey[1]) &&
+              queryKey[1][0] === "meeting" &&
+              queryKey[1][1] === "getMany"
+            );
+          },
+        });
 
         // TODO: Invalidate free tier usage
         onSuccess?.(data.id);
@@ -69,9 +78,18 @@ export const MeetingForm = ({
   const updateMeeting = useMutation(
     trpc.meeting.update.mutationOptions({
       onSuccess: async () => {
-        await queryClient.invalidateQueries(
-          trpc.meeting.getMany.queryOptions({})
-        );
+        await queryClient.invalidateQueries({
+          predicate: (query) => {
+            const queryKey = query.queryKey;
+            return (
+              Array.isArray(queryKey) &&
+              queryKey.length >= 2 &&
+              Array.isArray(queryKey[1]) &&
+              queryKey[1][0] === "meeting" &&
+              queryKey[1][1] === "getMany"
+            );
+          },
+        });
 
         if (initialValues?.id) {
           await queryClient.invalidateQueries(

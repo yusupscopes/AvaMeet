@@ -15,6 +15,7 @@ import {
   MIN_PAGE_SIZE,
 } from "@/constants";
 import { meetingInsertSchema, meetingUpdateSchema } from "../schema";
+import { MeetingStatus } from "../types";
 
 export const meetingRouter = createTRPCRouter({
   create: protectedProcedure
@@ -64,25 +65,37 @@ export const meetingRouter = createTRPCRouter({
           .max(MAX_PAGE_SIZE)
           .default(DEFAULT_PAGE_SIZE),
         search: z.string().nullish(),
+        agentId: z.string().nullish(),
+        status: z
+          .enum([
+            MeetingStatus.Upcoming,
+            MeetingStatus.Active,
+            MeetingStatus.Completed,
+            MeetingStatus.Processing,
+            MeetingStatus.Canceled,
+          ])
+          .nullish(),
       })
     )
     .query(async ({ ctx, input }) => {
-      const { page, pageSize, search } = input;
+      const { page, pageSize, search, agentId, status } = input;
 
       const items = await database
         .select({
           ...getTableColumns(meeting),
           agent: agent,
-          duration: sql<number>`EXTRACT(EPOCH FROM (ended_at - started_at))`.as(
-            "duration"
-          ),
+          duration: sql<
+            number | null
+          >`EXTRACT(EPOCH FROM (ended_at - started_at))`.as("duration"),
         })
         .from(meeting)
         .innerJoin(agent, eq(meeting.agentId, agent.id))
         .where(
           and(
             eq(meeting.userId, ctx.auth.user.id),
-            search ? ilike(meeting.name, `%${search}%`) : undefined
+            search ? ilike(meeting.name, `%${search}%`) : undefined,
+            status ? eq(meeting.status, status) : undefined,
+            agentId ? eq(meeting.agentId, agentId) : undefined
           )
         )
         .orderBy(desc(meeting.createdAt), desc(meeting.id))
@@ -96,7 +109,9 @@ export const meetingRouter = createTRPCRouter({
         .where(
           and(
             eq(meeting.userId, ctx.auth.user.id),
-            search ? ilike(meeting.name, `%${search}%`) : undefined
+            search ? ilike(meeting.name, `%${search}%`) : undefined,
+            status ? eq(meeting.status, status) : undefined,
+            agentId ? eq(meeting.agentId, agentId) : undefined
           )
         );
 

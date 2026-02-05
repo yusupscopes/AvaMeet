@@ -21,6 +21,7 @@ import { UpdateAgentDialog } from "../components/update-agent-dialog";
 type Props = {
   agentId: string;
 };
+
 export const AgentIdView = ({ agentId }: Props) => {
   const trpc = useTRPC();
   const router = useRouter();

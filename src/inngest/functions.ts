@@ -37,8 +37,13 @@ export const meetingProcessing = inngest.createFunction(
   { event: "meeting/processing" },
   async ({ event, step }) => {
     const response = await step.run("fetch-transcript", async () => {
-      const response = await fetch(event.data.transcriptUrl);
-      return response.text();
+      const res = await fetch(event.data.transcriptUrl);
+      if (!res.ok) {
+        throw new Error(
+          `Transcript fetch failed: ${res.status} ${res.statusText} (${event.data.transcriptUrl})`,
+        );
+      }
+      return res.text();
     });
 
     const transcript = await step.run("parse-transcript", async () => {
@@ -48,19 +53,24 @@ export const meetingProcessing = inngest.createFunction(
     const transcriptWithSpeakers = await step.run("add-speakers", async () => {
       const speakerIds = [
         ...new Set(transcript.map((item) => item.speaker_id)),
-      ];
+      ].filter((id): id is string => id != null);
 
-      const userSpeakers = await database
-        .select()
-        .from(user)
-        .where(inArray(user.id, speakerIds))
-        .then((users) => users.map((user) => ({ ...user })));
+      let userSpeakers: { id: string; name: string }[] = [];
+      let agentSpeakers: { id: string; name: string }[] = [];
 
-      const agentSpeakers = await database
-        .select()
-        .from(agent)
-        .where(inArray(agent.id, speakerIds))
-        .then((agents) => agents.map((agent) => ({ ...agent })));
+      if (speakerIds.length > 0) {
+        userSpeakers = await database
+          .select()
+          .from(user)
+          .where(inArray(user.id, speakerIds))
+          .then((users) => users.map((user) => ({ ...user })));
+
+        agentSpeakers = await database
+          .select()
+          .from(agent)
+          .where(inArray(agent.id, speakerIds))
+          .then((agents) => agents.map((agent) => ({ ...agent })));
+      }
 
       const speakers = [...userSpeakers, ...agentSpeakers];
 
@@ -86,16 +96,24 @@ export const meetingProcessing = inngest.createFunction(
       });
     });
 
-    const { output } = await summarizer.run(
-      "Summarize the following transcript: " +
-        JSON.stringify(transcriptWithSpeakers),
-    );
+    const { output } = await step.run("summarize-transcript", async () => {
+      const result = await summarizer.run(
+        "Summarize the following transcript: " +
+          JSON.stringify(transcriptWithSpeakers),
+      );
+      return { output: result.output };
+    });
 
     await step.run("save-summary", async () => {
+      const firstMessage = Array.isArray(output) && output.length > 0 ? output[0] : undefined;
+      const rawContent = firstMessage ? (firstMessage as TextMessage).content : undefined;
+      const summary =
+        typeof rawContent === "string" ? rawContent : "";
+
       await database
         .update(meeting)
         .set({
-          summary: (output[0] as TextMessage).content as string,
+          summary,
           status: MeetingStatus.Completed,
         })
         .where(eq(meeting.id, event.data.meetingId));

@@ -145,6 +145,13 @@ export async function POST(request: NextRequest) {
       .where(eq(meeting.id, meetingId))
       .returning();
 
+    if (!updatedMeeting) {
+      return NextResponse.json(
+        { error: "Meeting not found or not updated" },
+        { status: 404 },
+      );
+    }
+
     await inngest.send({
       name: "meeting/processing",
       data: {

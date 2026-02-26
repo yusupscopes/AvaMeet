@@ -12,6 +12,7 @@ import {
   CallSessionStartedEvent,
 } from "@stream-io/node-sdk";
 import { MeetingStatus } from "@/modules/meeting/types";
+import { inngest } from "@/inngest/client";
 
 function verifySignatureWithSDK(body: string, signature: string): boolean {
   return streamVideo.verifyWebhook(body, signature);
@@ -107,6 +108,72 @@ export async function POST(request: NextRequest) {
 
     const call = streamVideo.video.call("default", meetingId);
     await call.end();
+  } else if (eventType === "call.session_ended") {
+    const event = payload as CallEndedEvent;
+    const meetingId = event.call.custom?.meetingId as string;
+
+    if (!meetingId) {
+      return NextResponse.json(
+        { error: "Missing meeting ID" },
+        { status: 400 },
+      );
+    }
+
+    await database
+      .update(meeting)
+      .set({ status: MeetingStatus.Processing, endedAt: new Date() })
+      .where(
+        and(
+          eq(meeting.id, meetingId),
+          eq(meeting.status, MeetingStatus.Active),
+        ),
+      );
+  } else if (eventType === "call.transcription_ready") {
+    const event = payload as CallTranscriptionReadyEvent;
+    const meetingId = event.call_cid.split(":")[1]; // call_cid is formatted as "type:id"
+
+    if (!meetingId) {
+      return NextResponse.json(
+        { error: "Missing meeting ID" },
+        { status: 400 },
+      );
+    }
+
+    const [updatedMeeting] = await database
+      .update(meeting)
+      .set({ transcriptUrl: event.call_transcription.url })
+      .where(eq(meeting.id, meetingId))
+      .returning();
+
+    if (!updatedMeeting) {
+      return NextResponse.json(
+        { error: "Meeting not found or not updated" },
+        { status: 404 },
+      );
+    }
+
+    await inngest.send({
+      name: "meeting/processing",
+      data: {
+        meetingId: updatedMeeting.id,
+        transcriptUrl: updatedMeeting.transcriptUrl,
+      },
+    });
+  } else if (eventType === "call.recording_ready") {
+    const event = payload as CallRecordingReadyEvent;
+    const meetingId = event.call_cid.split(":")[1]; // call_cid is formatted as "type:id"
+
+    if (!meetingId) {
+      return NextResponse.json(
+        { error: "Missing meeting ID" },
+        { status: 400 },
+      );
+    }
+
+    await database
+      .update(meeting)
+      .set({ recordingUrl: event.call_recording.url })
+      .where(eq(meeting.id, meetingId));
   }
 
   return NextResponse.json({ status: "success" }, { status: 200 });

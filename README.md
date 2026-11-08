@@ -19,6 +19,10 @@ In AvaMeet you create AI agents with their own name and instructions, then sched
 
 </div>
 
+<p align="center">
+  <img src="docs/screenshot.png" alt="An AvaMeet call named Differential discussion: a participant tile in the speaker layout, with mic, camera, reactions, screen share, recording and leave controls along the bottom" width="900">
+</p>
+
 ---
 
 ## Features

@@ -1,231 +1,211 @@
+<div align="center">
+
 # AvaMeet
 
-> AI-powered video meetings with intelligent agents that join, listen, and summarize.
+**Run video meetings with an AI agent that joins the call, talks with you, and writes the notes afterwards.**
 
-AvaMeet is a SaaS platform for intelligent video conferencing. Create AI agents with custom instructions, schedule meetings where those agents participate in real time, and receive AI-generated summaries with structured notes after every call.
+In AvaMeet you create AI agents with their own name and instructions, then schedule meetings with them. When the call starts, the agent joins as a live voice participant. When it ends, the recording and transcript are processed in the background and turned into a summary with timestamped notes.
 
----
+[![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![tRPC](https://img.shields.io/badge/tRPC-11-398CCB?logo=trpc&logoColor=white)](https://trpc.io)
+[![Stream Video](https://img.shields.io/badge/Stream-Video-005FFF)](https://getstream.io/video/)
+[![Inngest](https://img.shields.io/badge/Inngest-v3-000000)](https://www.inngest.com)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Postgres on Neon](https://img.shields.io/badge/Postgres-Neon-00E599?logo=postgresql&logoColor=white)](https://neon.com)
 
-## What is AvaMeet?
+[Features](#features) · [How it works](#how-it-works) · [Tech stack](#tech-stack) · [Getting started](#getting-started) · [Project structure](#project-structure)
 
-AvaMeet lets you run video meetings where an AI agent sits in as a participant—not just a silent recorder, but an active voice that can listen, respond, and interact using OpenAI's Realtime API.
-
-Each meeting is automatically recorded and transcribed. When the call ends, the transcript is processed in the background and distilled into a narrative overview and thematic notes with timestamps.
-
-**Key capabilities:**
-
-- **AI Agent Builder** — Create agents with custom names and instructions. Reuse them across meetings.
-- **Video Conferencing** — Real-time video calls powered by [Stream Video](https://getstream.io/video/), with built-in recording and transcription.
-- **AI Participant** — Your agent joins the call as a voice participant using OpenAI's Realtime API.
-- **Automatic Summaries** — After the meeting, GPT-4o parses the transcript and generates a structured summary with overview and timestamped notes.
-- **Meeting Lifecycle** — Meetings flow through states: `Upcoming` → `Active` → `Processing` → `Completed` (or `Canceled`).
-- **Dashboard** — Manage agents and meetings, view details, and browse historical summaries.
+</div>
 
 ---
 
-## Why AvaMeet?
+## Features
 
-Traditional meeting tools record, but they don't *participate* or *think*. AvaMeet bridges that gap:
+- **Agents with instructions.** Create an agent with a name and instructions, such as "ask these five interview questions" or "track action items". Each one gets a generated avatar (DiceBear) and can be reused across meetings.
+- **An AI voice in the call.** When a meeting starts, the agent joins through Stream's OpenAI Realtime integration and speaks and listens according to its instructions.
+- **Video calls in the browser.** A lobby with camera and mic preview, then a full call view with speaker layout and controls, built on the [Stream Video](https://getstream.io/video/) React SDK.
+- **Recording and transcription by default.** Every call is created with recording (1080p) and transcription switched on, so there's nothing to remember to press.
+- **Automatic summaries.** Once the transcript is ready, an [Inngest](https://www.inngest.com) job resolves speaker names and has GPT-4o write an overview plus thematic notes with timestamp ranges.
+- **A clear meeting lifecycle.** Meetings move through `upcoming` → `active` → `processing` → `completed` (or `canceled`), and each state has its own detail view. Completed meetings show the summary, duration and recording.
+- **A searchable dashboard.** Paginated agent and meeting tables with search, status and agent filters kept in the URL, a collapsible sidebar, and ⌘K search.
+- **Sign-in options.** Email and password or Google, handled by [better-auth](https://www.better-auth.com).
 
-- **No more silent recordings.** Your AI agent can ask clarifying questions, take cues from the conversation, and behave according to instructions you define.
-- **No more manual note-taking.** Transcripts are automatically summarized into readable, structured notes with timestamps.
-- **No more context switching.** Everything—scheduling, calling, recording, summarizing—lives in one app.
+## How it works
 
-Use cases include:
+```mermaid
+flowchart LR
+    U([Browser]) -- "tRPC + TanStack Query" --> API
 
-- **Interviews** — An agent asks preloaded questions and summarizes candidate responses.
-- **Team Standups** — An agent captures action items and decisions.
-- **Client Calls** — An agent takes structured notes while you focus on the conversation.
-- **Research Sessions** — An agent probes follow-up questions based on your protocol.
+    subgraph Next["Next.js app"]
+        API[tRPC routers<br/>agents, meetings, tokens]
+        WH["/api/webhook<br/>Stream events"]
+        IG["/api/inngest"]
+    end
 
----
+    API -- "Drizzle" --> DB[(Neon Postgres)]
+    API -- "create call,<br/>upsert users, token" --> S
+    U <-- "video + audio" --> S
 
-## Tech Stack
+    subgraph S["Stream Video"]
+        C[Call<br/>recording · transcription]
+    end
 
-| Layer | Technology |
-|-------|------------|
-| Framework | [Next.js 15](https://nextjs.org) (App Router) |
-| Language | [TypeScript 5](https://www.typescriptlang.org) |
-| Styling | [Tailwind CSS 4](https://tailwindcss.com) |
-| UI Components | [shadcn/ui](https://ui.shadcn.com) + [Radix UI](https://www.radix-ui.com) |
-| Auth | [better-auth](https://www.better-auth.com) (Google OAuth + Email/Password) |
-| Database | [PostgreSQL](https://www.postgresql.org) via [Neon](https://neon.tech) |
-| ORM | [Drizzle ORM](https://orm.drizzle.team) |
-| API | [tRPC 11](https://trpc.io) |
-| Data Fetching | [TanStack Query](https://tanstack.com/query) |
-| Video | [Stream Video](https://getstream.io/video/) |
-| AI / LLM | [OpenAI](https://openai.com) (GPT-4o, Realtime API) |
-| Background Jobs | [Inngest](https://www.inngest.com) |
-| Forms | [react-hook-form](https://react-hook-form.com) + [Zod](https://zod.dev) |
-
----
-
-## Architecture Overview
-
-```
-┌─────────────────────────────────────────────┐
-│                Next.js App                    │
-│  ┌─────────┐  ┌─────────┐  ┌──────────────┐   │
-│  │  Auth   │  │  tRPC   │  │    Pages     │   │
-│  │ better  │  │ Routers │  │ (RSC + RCC)  │   │
-│  │  -auth  │  │         │  │              │   │
-│  └────┬────┘  └────┬────┘  └──────┬───────┘   │
-│       │            │              │           │
-│  ┌────┴────────────┴──────────────┴───────┐   │
-│  │         PostgreSQL (Neon)              │   │
-│  │   user │ agent │ meeting │ session     │   │
-│  └────────────────────────────────────────┘   │
-│                                               │
-│  ┌────────────────────────────────────────┐   │
-│  │     Stream Video (Calls + Webhooks)    │   │
-│  │  call.session_started                  │   │
-│  │  call.session_participant_left         │   │
-│  │  call.transcription_ready              │   │
-│  └────────────────────────────────────────┘   │
-│                                               │
-│  ┌────────────────────────────────────────┐   │
-│  │      Inngest (Background Jobs)         │   │
-│  │  1. Fetch transcript                   │   │
-│  │  2. Resolve speaker names              │   │
-│  │  3. GPT-4o summarization             │   │
-│  │  4. Save summary → meeting row         │   │
-│  └────────────────────────────────────────┘   │
-└─────────────────────────────────────────────┘
+    C -- "webhooks" --> WH
+    WH -- "connectOpenAi" --> RT[OpenAI Realtime<br/>agent voice]
+    RT <--> C
+    WH -- "meeting/processing" --> IG
+    WH --> DB
+    IG -- "transcript → GPT-4o summary" --> DB
 ```
 
-### Module Structure
+1. **Creating a meeting** inserts the meeting row, creates a Stream call with recording and transcription set to `auto-on`, and upserts the agent as a Stream user so it can join the call.
+2. **Joining a call** asks the server for a short-lived Stream user token (valid for an hour), then opens the lobby and the call.
+3. **When the session starts**, Stream sends `call.session_started` to `/api/webhook`. The handler verifies the signature, marks the meeting `active`, and connects the agent to the call with the OpenAI Realtime API, using the agent's instructions as its session prompt.
+4. **When the call ends**, the meeting moves to `processing`. The recording and transcript URLs arrive in later webhooks and are saved on the meeting row.
+5. **Summarization** runs as an Inngest function in steps: fetch the JSONL transcript, parse it, map speaker ids to user and agent names, summarize with GPT-4o, then save the summary and mark the meeting `completed`. Each step is retried on its own if it fails.
 
-The app is organized by domain under `src/modules/`:
+### Webhook events
 
-```
-src/modules/
-├── agent/          # CRUD for AI agents
-├── meeting/        # CRUD for meetings + detail views by state
-├── call/           # Video call UI (lobby, active, ended)
-├── dashboard/      # App shell (sidebar, navbar, layout)
-├── auth/           # Sign-in / sign-up UI
-└── home/           # Dashboard home (placeholder)
-```
+| Event | What the app does |
+| --- | --- |
+| `call.session_started` | Marks the meeting `active` and connects the AI agent |
+| `call.session_participant_left` | Ends the call |
+| `call.session_ended` | Marks the meeting `processing` |
+| `call.transcription_ready` | Saves the transcript URL and sends the `meeting/processing` event to Inngest |
+| `call.recording_ready` | Saves the recording URL |
 
----
+## Tech stack
 
-## Getting Started
+| Layer | Tools |
+| --- | --- |
+| Framework | [Next.js 15](https://nextjs.org) (App Router), [React 19](https://react.dev), TypeScript |
+| API | [tRPC 11](https://trpc.io), [TanStack Query](https://tanstack.com/query), [nuqs](https://nuqs.47ng.com) for URL state |
+| Video | [Stream Video](https://getstream.io/video/): React SDK, Node SDK, recording, transcription, webhooks |
+| AI | [OpenAI](https://platform.openai.com): Realtime API for the live agent, GPT-4o via [Inngest AgentKit](https://agentkit.inngest.com) for summaries |
+| Background jobs | [Inngest](https://www.inngest.com) |
+| Data | [Neon](https://neon.com) Postgres, [Drizzle ORM](https://orm.drizzle.team) |
+| Auth | [better-auth](https://www.better-auth.com) (email/password and Google) |
+| UI | [shadcn/ui](https://ui.shadcn.com) on [Radix UI](https://www.radix-ui.com), Tailwind CSS 4, TanStack Table, [DiceBear](https://www.dicebear.com), react-markdown |
+| Forms | React Hook Form, Zod |
+
+## Getting started
 
 ### Prerequisites
 
-- Node.js (see `package.json` `engines` field)
-- PostgreSQL database (e.g., [Neon](https://neon.tech))
-- [Stream Video](https://getstream.io/video/) account
-- [OpenAI](https://platform.openai.com) API key
-- Google OAuth credentials (optional, for Google sign-in)
+- Node.js 20 or later
+- Accounts on [Neon](https://neon.com), [Stream](https://getstream.io), and [OpenAI](https://platform.openai.com)
+- Google OAuth credentials, if you want Google sign-in
 
-### 1. Install Dependencies
+### 1. Clone and install
 
 ```bash
+git clone https://github.com/yusupscopes/AvaMeet.git
+cd AvaMeet
 npm install
 ```
 
-### 2. Configure Environment Variables
+### 2. Configure environment variables
 
 ```bash
 cp .env.example .env
 ```
 
-Fill in the required values:
+| Variable | Where to get it |
+| --- | --- |
+| `DATABASE_URL` | Neon connection string |
+| `BETTER_AUTH_SECRET` | Any random string, e.g. `openssl rand -base64 32` |
+| `BETTER_AUTH_URL`, `NEXT_PUBLIC_APP_URL` | Your app URL, `http://localhost:3000` locally |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Google Cloud console, OAuth client |
+| `NEXT_PUBLIC_STREAM_VIDEO_API_KEY`, `STREAM_VIDEO_SECRET_KEY` | Stream dashboard, your Video app |
+| `OPENAI_API_KEY` | OpenAI dashboard |
 
-| Variable | Description |
-|----------|-------------|
-| `DATABASE_URL` | PostgreSQL connection string |
-| `BETTER_AUTH_SECRET` | Random secret for auth sessions (generate with `openssl rand -base64 32`) |
-| `BETTER_AUTH_URL` | Your app URL (e.g., `http://localhost:3000`) |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | For Google OAuth (optional) |
-| `NEXT_PUBLIC_APP_URL` | Public app URL |
-| `NEXT_PUBLIC_STREAM_VIDEO_API_KEY` | Stream Video public API key |
-| `STREAM_VIDEO_SECRET_KEY` | Stream Video secret key |
-| `OPENAI_API_KEY` | OpenAI API key for summarization & real-time agent |
+The `DB_*` variables are only used by `docker-compose.yml`. The app connects through Neon's HTTP driver (`drizzle-orm/neon-http`), so `DATABASE_URL` should point at a Neon database.
 
-### 3. Set Up the Database
+### 3. Set up the database
 
 ```bash
 npm run db:push
 ```
 
-### 4. Run the Development Server
+This pushes the schema in [`src/database/schema.ts`](src/database/schema.ts) straight to your database.
+
+### 4. Run it
+
+The app, the Inngest dev server and a tunnel for Stream webhooks run as three processes:
 
 ```bash
+# Terminal 1: the Next.js app on http://localhost:3000
 npm run dev
-```
 
-Open [http://localhost:3000](http://localhost:3000).
-
-### 5. Run Background Jobs (Inngest)
-
-In a separate terminal:
-
-```bash
+# Terminal 2: the Inngest dev server, for the summary job
 npm run dev:inngest
-```
 
-### 6. Expose Local Server for Webhooks (Optional)
-
-Stream Video sends webhooks to your app. For local development, expose your server:
-
-```bash
+# Terminal 3: a public URL for Stream webhooks (https://avameet.loca.lt)
 npm run dev:webhook
 ```
 
-This uses `localtunnel` at `https://avameet.loca.lt`. Configure your Stream Video app to send webhooks to `https://<your-domain>/api/webhook`.
+In the Stream dashboard, set your Video app's webhook URL to `https://<your-tunnel>/api/webhook`. Without it, agents won't join calls and meetings won't move past `active`.
 
----
+Sign up, create an agent, schedule a meeting with it, and start the call.
 
-## Available Scripts
+## Scripts
 
-| Script | Description |
-|--------|-------------|
-| `npm run dev` | Start Next.js dev server |
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the Next.js dev server |
 | `npm run build` | Build for production |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run db:push` | Push Drizzle schema changes to database |
-| `npm run db:studio` | Open Drizzle Studio for database inspection |
-| `npm run dev:webhook` | Expose localhost via localtunnel for webhooks |
-| `npm run dev:inngest` | Start Inngest dev server for background jobs |
+| `npm run start` | Serve the production build |
+| `npm run lint` | Lint with ESLint |
+| `npm run db:push` | Push the Drizzle schema to the database |
+| `npm run db:studio` | Open Drizzle Studio |
+| `npm run dev:inngest` | Start the Inngest dev server |
+| `npm run dev:webhook` | Expose port 3000 through localtunnel for webhooks |
 
----
+## Project structure
 
-## Webhooks
+```
+AvaMeet/
+├── src/
+│   ├── app/
+│   │   ├── (auth)/            # Sign-in and sign-up pages
+│   │   ├── (dashboard)/       # Signed-in app: agents and meetings
+│   │   ├── call/[meetingId]/  # Full-screen call page
+│   │   └── api/
+│   │       ├── auth/          # better-auth handler
+│   │       ├── trpc/          # tRPC handler
+│   │       ├── webhook/       # Stream Video webhooks
+│   │       └── inngest/       # Inngest function endpoint
+│   ├── modules/
+│   │   ├── agent/             # Agent router, form, table, detail view
+│   │   ├── meeting/           # Meeting router, form, table, per-state views
+│   │   ├── call/              # Lobby, active call and ended screens
+│   │   ├── dashboard/         # Sidebar, navbar, ⌘K command menu
+│   │   ├── auth/              # Sign-in and sign-up views
+│   │   └── home/              # Dashboard home
+│   ├── components/            # Shared UI: data table, states, dialogs, shadcn/ui
+│   ├── database/              # Drizzle client and schema
+│   ├── inngest/               # Inngest client and the summary function
+│   ├── lib/                   # Auth, Stream client, avatars
+│   └── trpc/                  # tRPC init, routers, client and server helpers
+├── docker-compose.yml
+└── drizzle.config.ts
+```
 
-AvaMate expects webhooks from Stream Video at `/api/webhook`. The following events are handled:
+## Security notes
 
-| Event | Action |
-|-------|--------|
-| `call.session_started` | Connects the AI agent to the call via OpenAI Realtime API |
-| `call.session_participant_left` | Ends the call session |
-| `call.session_ended` | Marks meeting as `Processing` |
-| `call.transcription_ready` | Saves transcript URL and triggers Inngest summarization job |
-| `call.recording_ready` | Saves recording URL |
+- Every agent and meeting procedure goes through `protectedProcedure`, which reads the session from better-auth, and every query is scoped to the signed-in user.
+- Webhooks are rejected unless their `x-signature` header verifies against the Stream secret.
+- Stream user tokens expire after an hour.
+- Input is validated on the server with the same Zod schemas the forms use.
 
-Ensure your Stream Video app is configured with the webhook URL and a valid signing secret.
+## Acknowledgements
 
----
+Built with [Next.js](https://nextjs.org), [Stream Video](https://getstream.io/video/), [OpenAI](https://openai.com), [Inngest](https://www.inngest.com), [Neon](https://neon.com), [better-auth](https://www.better-auth.com), [shadcn/ui](https://ui.shadcn.com) and [DiceBear](https://www.dicebear.com).
 
-## AI Summarization Flow
+<div align="center">
 
-When a meeting ends and the transcription is ready, the following happens asynchronously:
+Made by [Yusup Maulana](https://github.com/yusupscopes)
 
-1. **Transcript fetched** — JSONL transcript is downloaded from Stream Video.
-2. **Speaker resolution** — Speaker IDs are mapped to actual names using the `user` and `agent` tables.
-3. **Summarization** — A GPT-4o agent processes the transcript and produces:
-   - An **Overview** (narrative summary)
-   - **Notes** (thematic sections with timestamp ranges and bullet points)
-4. **Persisted** — The summary is saved to the `meeting` row, and the status becomes `Completed`.
-
----
-
-## License
-
-MIT
-
----
-
-Built with [Next.js](https://nextjs.org), [Stream Video](https://getstream.io/video/), and [OpenAI](https://openai.com).
+</div>
